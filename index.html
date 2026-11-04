@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mein Feed</title>
+<style>
+  :root { --bg:#0a0a12; --card:#151522; --text:#f1f1f7; --muted:#9a9ab0; --accent:#a78bfa; --line:rgba(255,255,255,.08); --cta:linear-gradient(135deg,#8b5cf6,#ec4899); }
+  * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { padding:18px 14px 6px; }
+  .bar { display:flex; align-items:flex-start; justify-content:space-between; max-width:640px; margin:0 auto 14px; gap:8px; }
+  h1 { font-size:1.9rem; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+  .sub { color:var(--muted); font-size:.85rem; margin-top:2px; }
+  .bar button { background:rgba(255,255,255,.06); border:0; color:var(--text); border-radius:999px; padding:7px 13px; font-size:.85rem; cursor:pointer; }
+  .bar button.on { background:var(--cta); font-weight:700; }
+  .tiles { display:flex; gap:12px; overflow-x:auto; max-width:640px; margin:0 auto; padding:2px 2px 10px; scrollbar-width:none; }
+  .tiles::-webkit-scrollbar { display:none; }
+  .tile { flex:none; width:68px; background:none; border:0; color:var(--muted); cursor:pointer; text-align:center; font-size:.72rem; opacity:.65; transition:opacity .15s; }
+  .tile .ti { display:flex; align-items:center; justify-content:center; width:64px; height:64px; margin-bottom:5px; border-radius:20px; font-size:1.9rem; background:linear-gradient(145deg,var(--g1),var(--g2)); box-shadow:0 6px 16px -6px var(--g1); }
+  .tile .tl { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tile.on { opacity:1; color:var(--text); font-weight:600; }
+  .tile.on .ti { outline:2.5px solid #fff; outline-offset:2px; }
+  main { max-width:640px; margin:0 auto; padding:12px; display:flex; flex-direction:column; gap:22px; }
+  article { background:var(--card); border-radius:28px; overflow:hidden; border:1px solid var(--line); box-shadow:0 14px 34px -18px var(--g1); }
+  article > a { color:inherit; text-decoration:none; display:block; }
+  .hero { position:relative; }
+  .img { width:100%; aspect-ratio:16/10; object-fit:cover; display:block; background:#222232; }
+  .hero::after { content:""; position:absolute; inset:auto 0 0 0; height:45%; background:linear-gradient(transparent,var(--card)); pointer-events:none; }
+  .pill { position:absolute; top:12px; left:12px; z-index:1; background:rgba(10,10,18,.55); backdrop-filter:blur(8px); border-radius:999px; padding:4px 11px; font-size:.78rem; font-weight:600; }
+  .ph { position:relative; overflow:hidden; width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; font-size:4.6rem; background:linear-gradient(135deg,var(--g1),var(--g2)); }
+  .ph::before, .ph::after { content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.14); }
+  .ph::before { width:190px; height:190px; right:-50px; top:-70px; }
+  .ph::after { width:120px; height:120px; left:-30px; bottom:-50px; background:rgba(0,0,0,.16); }
+  .ph span { position:relative; z-index:1; filter:drop-shadow(0 6px 10px rgba(0,0,0,.3)); }
+  .body { padding:6px 20px 14px; position:relative; z-index:1; }
+  .meta { color:var(--muted); font-size:.78rem; margin-bottom:6px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tag { color:var(--accent); font-weight:600; }
+  h2 { font-size:1.3rem; font-weight:800; line-height:1.25; letter-spacing:-.01em; margin-bottom:8px; }
+  p { color:#c3c3d4; font-size:.95rem; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .actions { display:flex; gap:8px; padding:0 16px 16px; align-items:center; }
+  .act { background:rgba(255,255,255,.07); border:0; color:var(--text); border-radius:999px; min-width:44px; height:40px; padding:0 14px; font-size:1.05rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+  .act.lk.on { background:rgba(255,107,138,.22); box-shadow:inset 0 0 0 1.5px #ff6b8a; }
+  .act.sv.on { background:rgba(167,139,250,.25); box-shadow:inset 0 0 0 1.5px var(--accent); }
+  .act.ds { margin-left:auto; background:var(--cta); font-size:.9rem; font-weight:700; color:#fff; }
+  #ov { max-width:640px; margin:6px auto 0; padding:0 12px; }
+  #ov details { background:var(--card); border:1px solid var(--line); border-radius:24px; padding:14px 18px; }
+  #ov details.inner { padding:0; background:none; border:0; }
+  #ov summary { cursor:pointer; font-weight:700; }
+  #ov h3 { font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:18px 0 6px; }
+  .sum { padding:6px 0; border-top:1px solid var(--line); font-size:.9rem; }
+  .sum a { color:#c3c3d4; text-decoration:none; display:block; padding-left:4px; }
+  .sum a:hover { color:var(--accent); }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  td, th { padding:7px 4px; text-align:left; border-top:1px solid var(--line); vertical-align:middle; }
+  th { color:var(--muted); font-weight:500; border-top:0; }
+  .bw { background:rgba(255,255,255,.07); border-radius:99px; height:8px; width:100%; min-width:60px; overflow:hidden; }
+  .bw i { display:block; height:100%; border-radius:99px; }
+  .sug { display:flex; flex-wrap:wrap; gap:8px; }
+  .sug button { background:rgba(167,139,250,.14); color:var(--accent); border:0; border-radius:999px; padding:6px 14px; cursor:pointer; font-size:.85rem; font-weight:600; }
+  .hint { color:var(--muted); font-size:.85rem; }
+  dialog#rd { padding:0; width:min(100vw,680px); max-width:100vw; height:100dvh; max-height:100dvh; border:0; border-radius:0; background:radial-gradient(120% 40% at 50% 0%, color-mix(in srgb,var(--g1) 30%,transparent), transparent) var(--bg); color:var(--text); }
+  .rbar { position:sticky; top:0; z-index:2; display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 14px; background:rgba(10,10,18,.88); backdrop-filter:blur(10px); }
+  .rbar button, .rbar a, .rfoot a.orig { background:rgba(255,255,255,.08); border:0; color:var(--text); border-radius:999px; padding:7px 14px; font-size:.9rem; text-decoration:none; cursor:pointer; }
+  .rbar a.ds, .rfoot a.ds { background:var(--cta); color:#fff; font-weight:700; }
+  .rcont { padding:6px 18px 48px; }
+  .rcont h1 { font-size:1.6rem; line-height:1.2; margin:6px 0 14px; }
+  .rcont p { display:block; -webkit-line-clamp:none; overflow:visible; color:#d3d3e2; margin:13px 0; line-height:1.7; }
+  .rcont img { max-width:100%; height:auto; border-radius:20px; display:block; margin:14px 0; }
+  .rcont .ph { border-radius:22px; margin:14px 0; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:14px 16px; margin:16px 0; }
+  .box h3 { margin:0 0 8px !important; }
+  .box p { margin:0 !important; }
+  .art table { display:block; overflow-x:auto; margin:12px 0; }
+  .art td, .art th { border:1px solid var(--line); padding:6px 8px; }
+  .art a { color:var(--accent); }
+  .art blockquote { border-left:3px solid var(--accent); padding-left:12px; color:#c3c3d4; margin:12px 0; }
+  .art h1,.art h2,.art h3,.art h4 { margin:20px 0 6px; font-size:1.15rem; }
+  .art ul,.art ol { padding-left:22px; color:#d3d3e2; }
+  .rfoot { display:flex; gap:8px; flex-wrap:wrap; margin-top:22px; align-items:center; }
+  .rfoot a { display:inline-flex; align-items:center; height:40px; padding:0 16px; border-radius:999px; text-decoration:none; font-size:.9rem; }
+  #status { text-align:center; color:var(--muted); padding:24px 0 48px; font-size:.9rem; }
+  dialog { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:24px; padding:18px; width:min(92vw,520px); }
+  dialog::backdrop { background:rgba(0,0,0,.65); }
+  dialog input { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px; margin:6px 0; font-size:.9rem; }
+  dialog button { background:var(--cta); color:#fff; border:0; border-radius:999px; padding:8px 16px; font-weight:700; cursor:pointer; margin-top:6px; }
+  dialog .x { background:rgba(255,255,255,.08); color:var(--muted); margin-left:6px; }
+  dialog ul { list-style:none; padding:0; font-size:.8rem; color:var(--muted); max-height:30vh; overflow:auto; margin-top:8px; word-break:break-all; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar"><div><h1>Entdecken</h1><div class="sub">Dein Feed statt TikTok</div></div><div><button id="newBtn" hidden>🕒 Neueste</button> <button id="mixBtn" title="Zufällig mischen">🔀 Mix</button> <button id="addBtn">＋</button></div></div>
+  <div class="tiles" id="chips"></div>
+</header>
+<section id="ov"></section>
+<main id="feed"></main>
+<div id="status">Lade …</div>
+
+<dialog id="rd"></dialog>
+<dialog id="dlg">
+  <strong>Eigene Quelle hinzufügen</strong>
+  <input id="fUrl" placeholder="Suchbegriff (z. B. Mars-Mission) oder RSS-Adresse">
+  <input id="fTopic" placeholder="Name des Themas (optional)">
+  <div style="font-size:.8rem;color:var(--muted)">Ein Suchbegriff holt automatisch aktuelle Artikel aus Google News (meist ohne Bild).</div>
+  <button id="fSave">Speichern</button><button class="x" id="fClose">Schließen</button>
+  <ul id="fList"></ul>
+</dialog>
+
+<script>
+// ===== Quellen (hier einfach ändern/ergänzen) =====
+const TOPICS = {
+  "Physik":      { emoji:"⚛️", color:"#1e3a5f", feeds:["https://phys.org/rss-feed/physics-news/","https://api.quantamagazine.org/feed/"] },
+  "Medizin":     { emoji:"🧬", color:"#4a1d3d", feeds:["https://medicalxpress.com/rss-feed/","https://phys.org/rss-feed/biology-news/biochemistry/"] },
+  "Pharma":      { emoji:"💊", color:"#1d4a3a", feeds:["https://www.fiercepharma.com/rss/xml","https://www.fiercebiotech.com/rss/xml"] },
+  "Elektronik":  { emoji:"🔌", color:"#4a3a1d", feeds:["https://hackaday.com/blog/feed/","https://blog.adafruit.com/feed/"] },
+  "Anime":       { emoji:"🎌", color:"#4a1d2a", feeds:["https://www.animenewsnetwork.com/all/rss.xml","https://myanimelist.net/rss/news.xml"] },
+  "Cosplay":     { emoji:"🎭", color:"#3a1d4a", feeds:["https://www.reddit.com/r/cosplay/top/.rss?t=day"] },
+  "Volleyball":  { emoji:"🏐", color:"#4a441d", feeds:["https://www.volleyballmag.com/feed/"] },
+  "Welt":        { emoji:"🌍", color:"#22303f", feeds:["https://www.tagesschau.de/index~rss2.xml","https://feeds.bbci.co.uk/news/world/rss.xml"] },
+  "Technik":     { emoji:"💡", color:"#1d3a4a", feeds:["https://www.theverge.com/rss/index.xml","https://www.spektrum.de/alias/rss/spektrum-de-rss-feed/996406"] }
+};
+const API = "https://api.rss2json.com/v1/api.json?rss_url=";
+const BATCH = 8, TTL = 15*60*1000;
+
+// ===== Zustand =====
+const safe = { get(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } },
+               set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true }catch{ return false } } };
+let custom = safe.get("customFeeds", []);          // [{url, topic}]
+let active = new Set(safe.get("activeTopics", ["Alle"]));
+let items = [], shown = 0, loading = false;
+let mix = safe.get("mix", false);
+let liked = safe.get("liked", {}), saved = safe.get("saved", {});   // {link: Artikel}
+const REC = "✨ Für dich";
+let allItems = [];
+const STOP = new Set("dass eine einer einen einem eines nicht auch sich oder wird sind sein wurde haben noch mehr über nach schon wenn dann aber durch gegen unter zwischen werden wieder neue neuen neuer ihre ihren about their there which would after first from with that this have what when your will been more than into over only just says said news video study could while where these those other".split(" "));
+function affinity(){ const a={}; Object.values(liked).forEach(i=>a[i.topic]=(a[i.topic]||0)+2); Object.values(saved).forEach(i=>a[i.topic]=(a[i.topic]||0)+3); return a; }
+const words = t => [...new Set((t.toLowerCase().match(/[a-zäöüß]{5,}/g)||[]).filter(w=>!STOP.has(w)))];
+function keywords(){ const c={}; [...Object.values(liked),...Object.values(saved)].forEach(i=>words(i.title).forEach(w=>c[w]=(c[w]||0)+1)); return c; }
+function recSort(list){
+  const aff=affinity(), kw=keywords(); const ds=list.map(i=>i.date), lo=Math.min(...ds), span=Math.max(1,Math.max(...ds)-lo);
+  const sc = i => (aff[i.topic]||0) + 1.5*words(i.title).reduce((a,w)=>a+(kw[w]>=2?kw[w]:0),0) + (i.date-lo)/span;
+  return list.map(i=>[sc(i),i]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+}
+function renderOv(){
+  const el=$("ov"); if(!allItems.length || [...active].some(n=>SPECIAL[n])){ el.innerHTML=""; return; }
+  const T=topicsAll(), aff=affinity(), kw=keywords();
+  const by={}; allItems.forEach(i=>(by[i.topic] ||= []).push(i));
+  const rows=Object.keys(by).map(n=>({n,c:by[n].length,a:aff[n]||0,top:by[n].slice().sort((x,y)=>y.date-x.date).slice(0,2)}));
+  const mc=Math.max(1,...rows.map(r=>r.c)), ma=Math.max(1,...rows.map(r=>r.a));
+  const sum=rows.map(r=>`<div class="sum"><b>${(T[r.n]||{}).emoji||"📰"} ${esc(r.n)}</b> · ${r.c} Artikel${r.top.map(i=>`<a href="${esc(i.link)}" target="_blank" rel="noopener">• ${esc(i.title)}</a>`).join("")}</div>`).join("");
+  const tbl=`<table><tr><th>Thema</th><th>Artikel</th><th>Dein Interesse</th></tr>`+rows.map(r=>`<tr><td>${(T[r.n]||{}).emoji||"📰"} ${esc(r.n)}</td><td><div class="bw"><i style="width:${r.c/mc*100}%;background:#5b8def"></i></div>${r.c}</td><td><div class="bw"><i style="width:${r.a/ma*100}%;background:#ff6b8a"></i></div>${r.a?r.a+" Pkt.":"–"}</td></tr>`).join("")+`</table>`;
+  const used=new Set(Object.keys(T).map(x=>x.toLowerCase()));
+  const sug=Object.entries(kw).filter(([w,c])=>c>=2&&!used.has(w)).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const sugH = sug.length ? `<div class="sug">${sug.map(([w])=>`<button data-k="${esc(w)}">＋ ${esc(w[0].toUpperCase()+w.slice(1))}</button>`).join("")}</div>`
+    : `<div class="hint">Likes und gespeicherte Artikel zeigen mir, was dich interessiert. Nach ein paar davon erscheinen hier Themenvorschläge und „✨ Für dich" wird persönlich.</div>`;
+  const best=rows.filter(r=>r.a).sort((a,b)=>b.a-a.a)[0];
+  el.innerHTML=`<details open><summary>📊 Überblick – ${allItems.length} Artikel in ${rows.length} Themen</summary>
+    <h3>Themen im Vergleich</h3>${tbl}
+    <h3>Themenvorschläge${best?` (dein Favorit: ${(T[best.n]||{}).emoji||""} ${esc(best.n)})`:""}</h3>${sugH}
+    <h3>Schlagzeilen pro Thema</h3><details class="inner"><summary class="hint">Anzeigen</summary>${sum}</details></details>`;
+}
+const SPECIAL = { "🔖 Gespeichert":"saved", "❤️ Geliked":"liked" };
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+const $ = id => document.getElementById(id);
+const topicsAll = () => { const t = {...TOPICS}; custom.forEach(c => { if(!t[c.topic]) t[c.topic]={emoji:"⭐",color:"#2a3340",feeds:[]}; }); return t; };
+const feedsFor = topic => [...(TOPICS[topic]?.feeds||[]), ...custom.filter(c=>c.topic===topic).map(c=>c.url)];
+
+const GR = {Physik:["#3b82f6","#6d28d9"],Medizin:["#ec4899","#9333ea"],Pharma:["#10b981","#0ea5e9"],Elektronik:["#f59e0b","#ef4444"],Anime:["#f43f5e","#fb923c"],Cosplay:["#a855f7","#ec4899"],Volleyball:["#facc15","#f97316"],Welt:["#38bdf8","#2563eb"],Technik:["#06b6d4","#6366f1"],
+  "Alle":["#64748b","#334155"],"✨ Für dich":["#8b5cf6","#ec4899"],"🔖 Gespeichert":["#6366f1","#312e81"],"❤️ Geliked":["#fb7185","#be123c"]};
+function grad(n){ if(GR[n]) return GR[n]; const h=Math.abs([...n].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7))%360; return [`hsl(${h} 70% 55%)`,`hsl(${(h+50)%360} 70% 42%)`]; }
+const gvars = n => { const g=grad(n); return `--g1:${g[0]};--g2:${g[1]}`; };
+function esc(s){ const d=document.createElement("div"); d.textContent=s||""; return d.innerHTML; }
+function strip(html){ const d=document.createElement("div"); d.innerHTML=html||""; return (d.textContent||"").replace(/\s+/g," ").trim(); }
+function firstImg(it){
+  if(it.thumbnail) return it.thumbnail;
+  if(it.enclosure && it.enclosure.link && /image|jpe?g|png|webp/i.test((it.enclosure.type||"")+it.enclosure.link)) return it.enclosure.link;
+  const m = /<img[^>]+src=["']([^"']+)["']/i.exec((it.content||"")+(it.description||""));
+  return m ? m[1] : "";
+}
+function ago(d){ const s=(Date.now()-d)/1000; if(s<3600) return Math.max(1,Math.round(s/60))+" Min."; if(s<86400) return Math.round(s/3600)+" Std."; return Math.round(s/86400)+" Tg."; }
+
+async function loadFeed(url, topic){
+  const key = "c:"+url; const c = safe.get(key,null);
+  if(c && Date.now()-c.t < TTL) return c.items.map(i=>({...i,topic}));
+  try{
+    const r = await fetch(API+encodeURIComponent(url));
+    const j = await r.json();
+    if(j.status!=="ok") return [];
+    const out = j.items.map(it => ({
+      title: strip(it.title), link: it.link, img: firstImg(it),
+      text: (t => t.startsWith(strip(it.title).slice(0,25)) ? "" : t)(strip(it.description||it.content).slice(0,260)),
+      date: new Date((it.pubDate||"").replace(" ","T")+ (it.pubDate&&!/Z|\+/.test(it.pubDate)?"Z":"")).getTime() || Date.now(),
+      html: (it.content||it.description||"").slice(0,12000),
+      source: strip(j.feed?.title||"")
+    }));
+    if(!safe.set(key,{t:Date.now(),items:out})) safe.set(key,{t:Date.now(),items:out.map(i=>({...i,html:""}))});
+    return out.map(i=>({...i,topic}));
+  }catch{ return []; }
+}
+
+async function refresh(){
+  loading = true; $("feed").innerHTML=""; $("status").textContent="Lade …"; shown=0; items=[];
+  const sp = [...active].find(n => SPECIAL[n]);
+  const rec = active.has(REC);
+  if(sp){ allItems=[]; renderOv();
+    items = Object.values(SPECIAL[sp]==="saved" ? saved : liked).reverse();
+    loading = false;
+    if(!items.length){ $("status").textContent="Noch nichts hier. Tippe bei einem Artikel auf ❤️ oder 🔖."; return; }
+    more(); return;
+  }
+  const all = topicsAll();
+  const topics = (active.has("Alle")||rec) ? Object.keys(all) : [...active];
+  const jobs = topics.flatMap(t => feedsFor(t).map(u => loadFeed(u,t)));
+  const res = (await Promise.all(jobs)).flat();
+  // Duplikate entfernen, neueste zuerst, Themen durchmischen
+  const seen = new Set();
+  const uniq = res.filter(i => i.link && !seen.has(i.link) && seen.add(i.link));
+  uniq.sort((a,b)=>b.date-a.date);
+  allItems = uniq; renderOv();
+  items = rec ? recSort(uniq) : mix ? shuffle(uniq) : interleave(uniq);
+  loading = false;
+  if(!items.length){ $("status").textContent="Keine Artikel geladen. Prüfe die Internetverbindung."; return; }
+  more();
+}
+// Mischt, damit nicht ein Thema ganze Blöcke füllt
+function interleave(list){
+  const by = {}; list.forEach(i => (by[i.topic] ||= []).push(i));
+  const keys = Object.keys(by), out = []; let left = true;
+  while(left){ left=false; for(const k of keys){ const x = by[k].shift(); if(x){ out.push(x); left=true; } } }
+  return out;
+}
+
+function talkUrl(it, summ){
+  const q = `Ich habe diesen Artikel gefunden und möchte mit dir darüber reden:\n\n„${it.title}“ (${it.source||it.topic})\n${it.link}\n\n${summ?"Anriss: "+cut(summ,300)+"\n\n":""}Fass die wichtigsten Punkte kurz zusammen, sag mir, was daran spannend oder kritisch ist, und stell mir dann eine Frage, damit wir ins Gespräch kommen.`;
+  return "https://claude.ai/new?q="+encodeURIComponent(q);
+}
+function card(i){
+  const t = topicsAll()[i.topic] || {emoji:"📰"};
+  const ill = `<div class="ph"><span>${t.emoji}</span></div>`;
+  const media = i.img
+    ? `<img class="img" loading="lazy" src="${esc(i.img)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=ph><span>${t.emoji}</span></div>'">`
+    : ill;
+  return `<article style="${gvars(i.topic)}"><a href="${esc(i.link)}" data-l="${esc(i.link)}" target="_blank" rel="noopener"><div class="hero"><span class="pill">${t.emoji} ${esc(i.topic)}</span>${media}</div>
+    <div class="body"><div class="meta"><span>${esc(i.source)}</span><span>vor ${ago(i.date)}</span></div>
+    <h2>${esc(i.title)}</h2>${i.text?`<p>${esc(i.text)}</p>`:""}</div></a>
+    <div class="actions"><button class="act lk ${liked[i.link]?"on":""}" data-l="${esc(i.link)}" title="Like">${liked[i.link]?"❤️":"🤍"}</button><button class="act sv ${saved[i.link]?"on":""}" data-l="${esc(i.link)}" title="Speichern">🔖</button><a class="act ds" href="${esc(talkUrl(i,i.text))}" target="_blank" rel="noopener">💬 Besprechen</a></div></article>`;
+}
+function toggleAct(it, isLike){
+  const store = isLike ? liked : saved;
+  if(store[it.link]) delete store[it.link]; else store[it.link] = it;
+  safe.set(isLike?"liked":"saved", store);
+  document.querySelectorAll(".act[data-l]").forEach(b => {
+    if(b.dataset.l!==it.link || b.classList.contains("lk")!==isLike) return;
+    const on=!!store[it.link]; b.classList.toggle("on",on);
+    if(isLike) b.textContent = on?"❤️":"🤍";
+  });
+  renderOv();
+}
+$("feed").addEventListener("click", e => {
+  const el = e.target.closest(".act, article > a"); if(!el || el.classList.contains("ds")) return;
+  const it = items.find(x => x.link === el.dataset.l); if(!it) return;
+  if(el.classList.contains("act")) toggleAct(it, el.classList.contains("lk"));
+  else { e.preventDefault(); openReader(it); }
+});
+function more(){
+  if(shown>=items.length){ $("status").textContent="Das war's für jetzt 🎉 – oben auf ein Thema tippen zum Neuladen."; return; }
+  $("feed").insertAdjacentHTML("beforeend", items.slice(shown,shown+BATCH).map(card).join(""));
+  shown += BATCH;
+  $("status").textContent = shown<items.length ? "Weiter scrollen …" : "Das war's für jetzt 🎉";
+}
+new IntersectionObserver(es => { if(es[0].isIntersecting && !loading && items.length) more(); }, {rootMargin:"600px"}).observe($("status"));
+
+function renderChips(){
+  const T = topicsAll(), names = ["Alle", REC, ...Object.keys(SPECIAL), ...Object.keys(T)];
+  $("chips").innerHTML = names.map(n => {
+    const m = /^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u.exec(n);
+    const icon = T[n] ? T[n].emoji : m ? m[1] : "🏠", label = T[n] ? n : m ? m[2] : n;
+    return `<button class="tile ${active.has(n)?"on":""}" data-n="${esc(n)}" style="${gvars(n)}"><span class="ti">${icon}</span><span class="tl">${esc(label)}</span></button>`;
+  }).join("");
+}
+$("chips").addEventListener("click", e => {
+  const n = e.target.closest(".tile")?.dataset.n; if(!n) return;
+  if(n==="Alle" || n===REC || SPECIAL[n]) active = new Set([n]);
+  else { [...active].forEach(a => (SPECIAL[a]||a===REC) && active.delete(a)); active.delete("Alle"); active.has(n) ? active.delete(n) : active.add(n); if(!active.size) active = new Set(["Alle"]); }
+  safe.set("activeTopics",[...active]); renderChips(); refresh(); scrollTo(0,0);
+});
+
+// Eigene Quellen
+function renderList(){ $("fList").innerHTML = custom.map((c,i)=>`<li>${esc(c.topic)}: ${esc(c.url)} <a href="#" data-d="${i}" style="color:var(--accent)">löschen</a></li>`).join(""); }
+$("addBtn").onclick = () => { renderList(); $("dlg").showModal(); };
+$("fClose").onclick = () => $("dlg").close();
+$("fSave").onclick = () => {
+  addTopic($("fUrl").value.trim(), $("fTopic").value.trim());
+  $("fUrl").value=""; $("fTopic").value=""; renderList();
+};
+function addTopic(v, name){
+  if(!v) return;
+  const isUrl = /^https?:\/\//.test(v);
+  const url = isUrl ? v : "https://news.google.com/rss/search?q="+encodeURIComponent(v)+"&hl=de&gl=DE&ceid=DE:de";
+  const topic = name || (isUrl ? "Eigene" : v[0].toUpperCase()+v.slice(1));
+  custom.push({url,topic}); active = new Set([topic]); safe.set("activeTopics",[...active]); safe.set("customFeeds",custom);
+  renderChips(); refresh(); scrollTo(0,0);
+}
+$("fList").onclick = e => { const d=e.target.dataset.d; if(d===undefined) return; e.preventDefault(); custom.splice(+d,1); safe.set("customFeeds",custom); renderList(); renderChips(); refresh(); };
+
+
+// ===== Lesemodus =====
+let cur = null;
+const DROP = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","SVG","NOSCRIPT","VIDEO","AUDIO","LINK","META","SELECT","TEXTAREA"]);
+const KEEP = new Set(["P","H1","H2","H3","H4","UL","OL","LI","TABLE","THEAD","TBODY","TR","TD","TH","IMG","FIGURE","FIGCAPTION","BLOCKQUOTE","A","STRONG","B","EM","I","BR","SPAN","DIV","SECTION","SMALL","SUB","SUP","CODE","PRE"]);
+function clean(html){
+  const doc = new DOMParser().parseFromString("<body>"+html, "text/html");
+  (function walk(n){
+    [...n.children].forEach(c => {
+      if(DROP.has(c.tagName.toUpperCase())){ c.remove(); return; }
+      walk(c);
+      if(!KEEP.has(c.tagName.toUpperCase())){ c.replaceWith(...c.childNodes); return; }
+      const tag=c.tagName, href=c.getAttribute("href"), src=c.getAttribute("data-src")||c.getAttribute("src"), alt=c.getAttribute("alt")||"",
+            w=+c.getAttribute("width")||99, h=+c.getAttribute("height")||99, cs=c.getAttribute("colspan"), rs=c.getAttribute("rowspan");
+      [...c.attributes].forEach(a => c.removeAttribute(a.name));
+      if(tag==="A"){ if(/^https?:/i.test(href||"")){ c.setAttribute("href",href); c.target="_blank"; c.rel="noopener"; } }
+      if(tag==="IMG"){
+        if(!/^(https?:)?\/\//i.test(src||"") || w<5 || h<5){ c.remove(); return; }
+        c.setAttribute("src",src); c.setAttribute("alt",alt); c.setAttribute("loading","lazy"); c.setAttribute("referrerpolicy","no-referrer");
+      }
+      if(cs) c.setAttribute("colspan",cs); if(rs) c.setAttribute("rowspan",rs);
+    });
+  })(doc.body);
+  return doc.body;
+}
+const NUM = /([$€£]\s?\d[\d.,]*(?:\s?(?:Mio|Mrd|million|billion|Millionen|Milliarden)(?![A-Za-zäöü]))?|\d[\d.,]*\s?(?:%|(?:Prozent|percent|Euro|Dollar|Mio|Mrd|million|billion|Millionen|Milliarden|Jahren?|years?|km|kg|mg|µg|ml|nm|GHz|MHz|kW|MW|°C|Patienten|Menschen|people|patients|qubits?)(?![A-Za-zäöüÄÖÜ])))/i;
+function sentences(t){ return t.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9„"“])/).map(x=>x.trim()).filter(x=>x.length>25); }
+const cut = (t,n) => t.length>n ? t.slice(0,n-1).trimEnd()+"…" : t;
+function facts(text){
+  const rows=[], seen=new Set();
+  for(const sn of sentences(text)){ const m=NUM.exec(sn); if(!m||seen.has(m[1])) continue; seen.add(m[1]); rows.push({v:m[1].trim(), s:cut(sn,140)}); if(rows.length>=6) break; }
+  const pct=rows.map(r=>({r,x:/^(\d[\d.,]*)\s?(%|Prozent|percent)/i.exec(r.v)})).filter(o=>o.x).map(o=>({v:parseFloat(o.x[1].replace(",",".")),r:o.r})).filter(o=>o.v<=100);
+  return {rows, pct};
+}
+function openReader(it){
+  cur = it; const T = topicsAll()[it.topic] || {emoji:"📰"};
+  const body = clean(it.html||""), text = (()=>{ const d=document.createElement("div"); d.innerHTML=body.innerHTML.replace(/<\/(p|li|td|th|tr|h\d|div|blockquote|figcaption)>|<br>/gi,"$& "); return (d.textContent||"").replace(/\s+/g," ").trim(); })();
+  const sn = sentences(text), f = facts(text);
+  $("rd").style.cssText = gvars(it.topic);
+  const ill = `<div class="ph"><span>${T.emoji}</span></div>`;
+  const hero0 = it.img && !body.innerHTML.includes(it.img.replace(/&/g,"&amp;")) ? `<img src="${esc(it.img)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML=\'\'">` : "";
+  const hero = hero0 || (body.querySelector("img") ? "" : ill);
+  const sum = sn.length ? `<div class="box"><h3>Kurzfassung (die ersten Sätze)</h3><p>${esc(cut(sn.slice(0,2).join(" "),320))}</p></div>` : "";
+  const tbl = f.rows.length ? `<div class="box"><h3>Zahlen &amp; Fakten</h3><table><tr><th>Wert</th><th>Zusammenhang</th></tr>${f.rows.map(r=>`<tr><td><b>${esc(r.v)}</b></td><td>${esc(r.s)}</td></tr>`).join("")}</table></div>` : "";
+  const bars = f.pct.length>=2 ? `<div class="box"><h3>Prozentwerte im Vergleich</h3>${f.pct.map(o=>`<div style="margin:8px 0;font-size:.85rem"><div class="bw"><i style="width:${o.v}%;background:#5b8def"></i></div><b>${o.v}%</b> ${esc(cut(o.r.s,70))}</div>`).join("")}</div>` : "";
+  const short = text.length<350 ? `<div class="box hint">Die Quelle liefert hier nur einen Anriss. Den ganzen Artikel mit allen Bildern und Tabellen gibt es im Original.</div>` : "";
+  const lk=!!liked[it.link], sv=!!saved[it.link];
+  $("rd").innerHTML = `<div class="rbar"><button class="close">← Zurück</button><a class="ds" href="${esc(talkUrl(it, sn.slice(0,2).join(" ")||text))}" target="_blank" rel="noopener">💬 Mit Claude besprechen</a></div>
+    <div class="rcont"><div class="meta"><span class="tag">${T.emoji} ${esc(it.topic)}</span><span>${esc(it.source)}</span><span>vor ${ago(it.date)}</span></div>
+    <h1>${esc(it.title)}</h1>${hero}${sum}${tbl}${bars}${short}<div class="art">${body.innerHTML}</div>
+    <div class="rfoot"><button class="act lk ${lk?"on":""}" data-l="${esc(it.link)}" title="Like">${lk?"❤️":"🤍"}</button><button class="act sv ${sv?"on":""}" data-l="${esc(it.link)}" title="Speichern">🔖</button><a class="orig" href="${esc(it.link)}" target="_blank" rel="noopener">Original ↗</a><a class="ds" href="${esc(talkUrl(it, sn.slice(0,2).join(" ")||text))}" target="_blank" rel="noopener" style="margin-left:auto">💬 Besprechen</a></div></div>`;
+  $("rd").showModal(); $("rd").scrollTop = 0;
+}
+$("rd").addEventListener("click", e => {
+  if(e.target.closest(".close")) { $("rd").close(); return; }
+  const b = e.target.closest(".act"); if(b && !b.classList.contains("ds") && cur) toggleAct(cur, b.classList.contains("lk"));
+});
+function syncMix(){ $("mixBtn").classList.toggle("on", mix); $("mixBtn").textContent = mix ? "🔀 Neu mischen" : "🔀 Mix"; $("newBtn").hidden = !mix; }
+$("newBtn").onclick = () => { mix=false; safe.set("mix",false); syncMix(); refresh(); scrollTo(0,0); };
+$("mixBtn").onclick = () => {
+  if(mix && ![...active].some(n=>SPECIAL[n])){ refresh(); scrollTo(0,0); return; }   // erneut tippen = neu mischen
+  mix = !mix; safe.set("mix",mix); syncMix(); refresh(); scrollTo(0,0);
+};
+$("ov").addEventListener("click", e=>{ const b=e.target.closest("[data-k]"); if(b) addTopic(b.dataset.k,""); });
+syncMix(); renderChips(); refresh();
+</script>
+</body>
+</html>
