@@ -339,9 +339,49 @@ function facts(text){
   const pct=rows.map(r=>({r,x:/^(\d[\d.,]*)\s?(%|Prozent|percent)/i.exec(r.v)})).filter(o=>o.x).map(o=>({v:parseFloat(o.x[1].replace(",",".")),r:o.r})).filter(o=>o.v<=100);
   return {rows, pct};
 }
+const fullCache = {};
+function md2html(md){
+  const inl = t => esc(t)
+    .replace(/!\[[^\]]*\]\(([^)\s"]+)[^)]*\)/g,'<img src="$1">')
+    .replace(/\[([^\]]+)\]\(([^)\s"]+)[^)]*\)/g,'<a href="$2">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/(^|\W)\*([^*\s][^*]*)\*/g,"$1<i>$2</i>");
+  const out=[]; let mode="", buf=[];
+  const flush = () => { if(!buf.length){ mode=""; return; }
+    if(mode==="ul") out.push("<ul>"+buf.map(x=>"<li>"+x+"</li>").join("")+"</ul>");
+    else if(mode==="tbl") out.push("<table>"+buf.map((r,i)=>"<tr>"+r.map(c=>(i?"<td>":"<th>")+c+(i?"</td>":"</th>")).join("")+"</tr>").join("")+"</table>");
+    else if(mode==="bq") out.push("<blockquote>"+buf.join(" ")+"</blockquote>");
+    buf=[]; mode=""; };
+  for(const raw of md.replace(/\r/g,"").split("\n")){
+    const l = raw.trim(); let m;
+    if(!l){ flush(); continue; }
+    if(/^(=+|-{3,}|\*{3,})$/.test(l)) { flush(); continue; }
+    if(m=/^(#{1,6})\s+(.*)$/.exec(l)){ flush(); out.push(`<h${Math.min(4,m[1].length+1)}>${inl(m[2])}</h${Math.min(4,m[1].length+1)}>`); continue; }
+    if(m=/^(?:[-*+]|\d+\.)\s+(.*)$/.exec(l)){ if(mode!=="ul"){ flush(); mode="ul"; } buf.push(inl(m[1])); continue; }
+    if(m=/^>\s?(.*)$/.exec(l)){ if(mode!=="bq"){ flush(); mode="bq"; } buf.push(inl(m[1])); continue; }
+    if(/^\|.*\|$/.test(l)){ if(/^\|[\s:|-]+\|$/.test(l)) continue; if(mode!=="tbl"){ flush(); mode="tbl"; } buf.push(l.slice(1,-1).split("|").map(c=>inl(c.trim()))); continue; }
+    flush(); out.push("<p>"+inl(l)+"</p>");
+  }
+  flush(); return out.join("\n");
+}
+async function loadFull(it, btn){
+  btn.disabled = true; btn.textContent = "Lade …"; $("ldmsg").textContent = "";
+  try{
+    const ctl = new AbortController(), t = setTimeout(()=>ctl.abort(), 25000);
+    const r = await fetch("https://r.jina.ai/"+it.link, {signal:ctl.signal}); clearTimeout(t);
+    if(!r.ok) throw 0;
+    let txt = await r.text(); const k = txt.indexOf("Markdown Content:"); if(k>=0) txt = txt.slice(k+17);
+    txt = txt.slice(0,60000);
+    if(txt.replace(/\s+/g," ").length < 400) throw 0;
+    fullCache[it.link] = md2html(txt);
+    const st = $("rd").scrollTop; openReader(it); $("rd").scrollTop = st;
+  }catch{
+    btn.disabled = false; btn.textContent = "📄 Nochmal versuchen";
+    $("ldmsg").textContent = "Dieser Artikel ließ sich nicht laden (die Seite blockiert Abrufe oder ist hinter einer Bezahlschranke). Nutze „Original ↗“.";
+  }
+}
 function openReader(it){
   cur = it; const T = topicsAll()[it.topic] || {emoji:"📰"};
-  const body = clean(it.html||""), text = (()=>{ const d=document.createElement("div"); d.innerHTML=body.innerHTML.replace(/<\/(p|li|td|th|tr|h\d|div|blockquote|figcaption)>|<br>/gi,"$& "); return (d.textContent||"").replace(/\s+/g," ").trim(); })();
+  const full = !!fullCache[it.link], body = clean(fullCache[it.link] || it.html || ""), text = (()=>{ const d=document.createElement("div"); d.innerHTML=body.innerHTML.replace(/<\/(p|li|td|th|tr|h\d|div|blockquote|figcaption)>|<br>/gi,"$& "); return (d.textContent||"").replace(/\s+/g," ").trim(); })();
   const sn = sentences(text), f = facts(text);
   $("rd").style.cssText = gvars(it.topic);
   const ill = `<div class="ph"><span>${T.emoji}</span></div>`;
@@ -350,16 +390,17 @@ function openReader(it){
   const sum = sn.length ? `<div class="box"><h3>Kurzfassung (die ersten Sätze)</h3><p>${esc(cut(sn.slice(0,2).join(" "),320))}</p></div>` : "";
   const tbl = f.rows.length ? `<div class="box"><h3>Zahlen &amp; Fakten</h3><table><tr><th>Wert</th><th>Zusammenhang</th></tr>${f.rows.map(r=>`<tr><td><b>${esc(r.v)}</b></td><td>${esc(r.s)}</td></tr>`).join("")}</table></div>` : "";
   const bars = f.pct.length>=2 ? `<div class="box"><h3>Prozentwerte im Vergleich</h3>${f.pct.map(o=>`<div style="margin:8px 0;font-size:.85rem"><div class="bw"><i style="width:${o.v}%;background:#5b8def"></i></div><b>${o.v}%</b> ${esc(cut(o.r.s,70))}</div>`).join("")}</div>` : "";
-  const short = text.length<350 ? `<div class="box hint">Die Quelle liefert hier nur einen Anriss. Den ganzen Artikel mit allen Bildern und Tabellen gibt es im Original.</div>` : "";
+  const short = !full && text.length<350 ? `<div class="box hint">Die Quelle liefert hier nur einen Anriss. Tippe auf „Ganzen Artikel laden“ oder öffne das Original.</div>` : "";
   const lk=!!liked[it.link], sv=!!saved[it.link];
   $("rd").innerHTML = `<div class="rbar"><button class="close">← Zurück</button><a class="ds" href="${esc(talkUrl(it, sn.slice(0,2).join(" ")||text))}" target="_blank" rel="noopener">💬 Mit Claude besprechen</a></div>
     <div class="rcont"><div class="meta"><span class="tag">${T.emoji} ${esc(it.topic)}</span><span>${esc(it.source)}</span><span>vor ${ago(it.date)}</span></div>
-    <h1>${esc(it.title)}</h1>${hero}${sum}${tbl}${bars}${short}<div class="art">${body.innerHTML}</div>
+    <h1>${esc(it.title)}</h1>${hero}${sum}${tbl}${bars}${short}${full?"":`<div class="rfoot" style="margin:6px 0 0"><button class="load orig" style="border:0;cursor:pointer;height:40px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--text);font-size:.9rem">📄 Ganzen Artikel laden</button></div><div class="hint" id="ldmsg" style="margin-top:8px"></div>`}<div class="art">${body.innerHTML}</div>
     <div class="rfoot"><button class="act lk ${lk?"on":""}" data-l="${esc(it.link)}" title="Like">${lk?"❤️":"🤍"}</button><button class="act sv ${sv?"on":""}" data-l="${esc(it.link)}" title="Speichern">🔖</button><a class="orig" href="${esc(it.link)}" target="_blank" rel="noopener">Original ↗</a><a class="ds" href="${esc(talkUrl(it, sn.slice(0,2).join(" ")||text))}" target="_blank" rel="noopener" style="margin-left:auto">💬 Besprechen</a></div></div>`;
-  $("rd").showModal(); $("rd").scrollTop = 0;
+  if(!$("rd").open){ $("rd").showModal(); $("rd").scrollTop = 0; }
 }
 $("rd").addEventListener("click", e => {
   if(e.target.closest(".close")) { $("rd").close(); return; }
+  const ld = e.target.closest(".load"); if(ld && cur){ loadFull(cur, ld); return; }
   const b = e.target.closest(".act"); if(b && !b.classList.contains("ds") && cur) toggleAct(cur, b.classList.contains("lk"));
 });
 function syncMix(){ $("mixBtn").classList.toggle("on", mix); $("mixBtn").textContent = mix ? "🔀 Neu mischen" : "🔀 Mix"; $("newBtn").hidden = !mix; }
